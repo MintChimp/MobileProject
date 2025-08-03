@@ -14,7 +14,7 @@ const handleSignUp = async () => {
     email,
     password,
     options: {
-      emailRedirectTo: 'exp://192.168.1.62:8081/verify?fromEmail=true', // <== must match your LAN IP
+      emailRedirectTo: 'mynotesapp://verify',
       data: { full_name: fullName },
     },
   });
