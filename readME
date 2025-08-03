@@ -1,0 +1,56 @@
+just use npm install first thing and it will grab the dependancies needed.
+
+App: Remaining Tasks for the Notes App
+Authentication (Postponed for Now cause I can't get Linking to work, feel free to work/research this)
+ Switch from exp:// to a proper HTTP(S) or custom URI (mynotesapp://) for email verification links
+
+ Re-enable Supabase email confirmation logic with deep link handling
+
+ Add logout and session-check logic
+
+ Protect routes that require authentication (notes, profile, etc.)
+
+Notes CRUD & Sync
+ Enable deletion of notes (Supabase + AsyncStorage)
+
+ Add sync status indicator (e.g. "Saved to device", "Synced to cloud")
+
+ Handle conflict resolution if user edits a note offline and online changes occurred
+
+ Allow notes to be sorted or searched (optional)
+
+ Optimize Supabase sync so it doesn’t resend identical notes
+
+Testing & Error Handling
+ Add error banners or alerts for failed Supabase writes
+
+ Add retry logic for failed writes when back online
+
+ Create test account credentials or shared .env file with Supabase keys
+
+ Set up a test suite or basic Jest config for hooks and utilities (optional)
+
+Navigation & UI/UX
+ Add tabs for Home and Profile
+
+ Remove or repurpose the current index.tsx page
+
+ Add a profile screen to show user info (e.g. email, logout button)
+
+ Improve modal accessibility (keyboard dismiss, focus behavior)
+
+ Add confirmation for deleting a note
+
+Supabase Data Model (if needed)
+ Add a last_synced column to notes table for conflict tracking
+
+ Optionally split notes by category or notebook
+
+Deployment Readiness
+ Switch to custom scheme (e.g. mynotesapp://) and build the app using EAS or expo run:android
+
+ Add app.config.js with production scheme, slug, and package
+
+ Finalize Supabase SITE_URL and redirect settings for production
+
+ Lock down Supabase RLS policies (production-ready)
