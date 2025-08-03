@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   View,
@@ -12,37 +13,48 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNotes } from '../hooks/useNotes'; // adjust path if needed
+import { supabase } from '../_lib/supabaseClient';
+import { useEffect } from 'react';
 
-export default function App() {
-  type Note = {
-    id: string;
-    title: string;
-    desc: string;
-  };
-
-  const [notes, setNotes] = useState<Note[]>([]);
+export default function NotesScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [newNoteDesc, setNewNoteDesc] = useState('');
-  const [activeNote, setActiveNote] = useState<Note | null>(null);
+  const [activeNote, setActiveNote] = useState<any>(null);
   const [editedDesc, setEditedDesc] = useState('');
 
-  const addNote = () => {
+const [userId, setUserId] = useState<string | null>(null);
+
+useEffect(() => {
+  const fetchUser = async () => {
+    const { data, error } = await supabase.auth.getUser();
+    if (data?.user?.id) {
+      setUserId(data.user.id);
+    } else {
+      console.warn('No user found or error fetching user:', error?.message);
+    }
+  };
+
+  fetchUser();
+}, []);
+
+const { notes, addNote, updateNote } = useNotes(userId);
+
+
+  const handleAddNote = () => {
     if (!newNoteTitle) {
       Alert.alert('Note title required');
       return;
     }
-    setNotes([
-      ...notes,
-      { id: Date.now().toString(), title: newNoteTitle, desc: newNoteDesc },
-    ]);
+    addNote(newNoteTitle, newNoteDesc);
     setNewNoteTitle('');
     setNewNoteDesc('');
     setModalVisible(false);
   };
 
-  const openNote = (note: Note) => {
+  const openNote = (note: any) => {
     setActiveNote(note);
     setEditedDesc(note.desc);
     setEditModalVisible(true);
@@ -50,14 +62,11 @@ export default function App() {
 
   const saveEditedNote = () => {
     if (!activeNote) return;
-    const updatedNotes = notes.map((note) =>
-      note.id === activeNote.id ? { ...note, desc: editedDesc } : note
-    );
-    setNotes(updatedNotes);
+    updateNote(activeNote.id, editedDesc);
     setEditModalVisible(false);
   };
 
-  const renderNote = ({ item }: { item: Note }) => (
+  const renderNote = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.noteBox} onPress={() => openNote(item)}>
       <Text style={styles.noteTitle}>{item.title}</Text>
       <Text numberOfLines={2} style={styles.noteDesc}>{item.desc}</Text>
@@ -66,12 +75,9 @@ export default function App() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: '#c2b9d6' }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notebooks</Text>
-        <TouchableOpacity onPress={() => setModalVisible(true)}>
-          <Ionicons name="add-circle-outline" size={28} color="black" />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity onPress={() => setModalVisible(true)}>
+        <Ionicons name="add-circle-outline" size={28} color="black" />
+      </TouchableOpacity>
 
       <FlatList
         data={notes}
@@ -80,14 +86,6 @@ export default function App() {
         contentContainerStyle={{ paddingBottom: 100 }}
       />
 
-      <View style={styles.footer}>
-        <Ionicons name="home-outline" size={24} />
-        <Ionicons name="document-text-outline" size={24} />
-        <Ionicons name="school-outline" size={24} />
-        <Ionicons name="person-outline" size={24} />
-      </View>
-
-      {/* New Note Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -104,7 +102,7 @@ export default function App() {
               value={newNoteDesc}
               onChangeText={setNewNoteDesc}
             />
-            <TouchableOpacity style={styles.addButton} onPress={addNote}>
+            <TouchableOpacity style={styles.addButton} onPress={handleAddNote}>
               <Text style={styles.addButtonText}>Add Note</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setModalVisible(false)}>
@@ -114,7 +112,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* Edit Note Modal */}
       <Modal visible={editModalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, { height: '60%' }]}>
@@ -142,14 +139,6 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#9d93b5',
-  },
-  headerTitle: { fontSize: 20, fontWeight: 'bold' },
   noteBox: {
     margin: 12,
     padding: 16,
@@ -160,18 +149,10 @@ const styles = StyleSheet.create({
   },
   noteTitle: { fontWeight: 'bold', marginBottom: 4 },
   noteDesc: { color: '#444' },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 12,
-    paddingBottom: 24,
-    borderTopWidth: 1,
-    backgroundColor: '#9d93b5',
-  },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)'
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
   modalContent: {
     margin: 20,
@@ -185,7 +166,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 8,
     borderRadius: 6,
-    backgroundColor: '#f9f9f9'
+    backgroundColor: '#f9f9f9',
   },
   addButton: {
     backgroundColor: '#6b5f84',
@@ -194,4 +175,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addButtonText: { color: '#fff', fontWeight: 'bold' },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
 });
