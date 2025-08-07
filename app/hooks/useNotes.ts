@@ -1,9 +1,7 @@
-
 import { useEffect, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { supabase } from '../_lib/supabaseClient';
-import { Alert } from 'react-native';
 
 export type Note = {
   id: string;
@@ -11,106 +9,176 @@ export type Note = {
   desc: string;
 };
 
+export type QueueOp = {
+  op: 'insert' | 'update' | 'delete';
+  note: Note;
+};
+
 const STORAGE_KEY = '@offline_notes';
+const QUEUE_KEY = '@offline_notes_queue';
 
 export function useNotes(userId: string | null) {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [queue, setQueue] = useState<QueueOp[]>([]);
   const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [lastSync, setLastSync] = useState<string | null>(null);
 
+  // Load notes from device storage
   const loadNotesFromStorage = async () => {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try {
-        setNotes(JSON.parse(raw));
-      } catch {
-        console.warn('Failed to parse offline notes');
-      }
+    try {
+      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      if (raw) setNotes(JSON.parse(raw));
+    } catch {
+      console.warn('Failed to parse offline notes');
     }
   };
 
-  const saveNotesToStorage = async (data: Note[]) => {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  // Load queue from device storage
+  const loadQueueFromStorage = async () => {
+    try {
+      const raw = await AsyncStorage.getItem(QUEUE_KEY);
+      if (raw) setQueue(JSON.parse(raw));
+    } catch {
+      console.warn('Failed to parse offline queue');
+    }
   };
 
-  const fetchNotesFromSupabase = async () => {
-    if (!userId) return;
-    const { data, error } = await supabase
-      .from('notes')
-      .select('*')
-      .eq('user_id', userId);
+  // Initial load of notes & queue
+  useEffect(() => {
+    loadNotesFromStorage();
+    loadQueueFromStorage();
+  }, []);
 
+  // Save notes to device storage
+  const saveNotesToStorage = useCallback(async (data: Note[]) => {
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }, []);
+
+  // Save queue to device storage
+  const saveQueueToStorage = useCallback(async (data: QueueOp[]) => {
+    await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(data));
+  }, []);
+
+  // Enqueue an operation to be processed later
+  const enqueue = useCallback(
+    async (item: QueueOp) => {
+      const updatedQueue = [...queue, item];
+      setQueue(updatedQueue);
+      await saveQueueToStorage(updatedQueue);
+    },
+    [queue, saveQueueToStorage]
+  );
+
+  // Process pending operations in the queue using Supabase
+  const drainQueue = useCallback(async () => {
+    for (const { op, note } of queue) {
+      try {
+        if (op === 'insert') {
+          await supabase.from('notes').insert({
+            id: note.id,
+            title: note.title,
+            desc: note.desc,
+            user_id: userId,
+          });
+        } else if (op === 'update') {
+          await supabase
+            .from('notes')
+            .update({ title: note.title, desc: note.desc })
+            .eq('id', note.id)
+            .eq('user_id', userId);
+        } else if (op === 'delete') {
+          await supabase
+          .from('notes')
+          .delete()
+          .eq('id', note.id)
+          .eq('user_id', userId);
+        }
+
+        // On success, remove op from queue
+        const nextQueue = queue.filter(q => q.note.id !== note.id || q.op !== op);
+        setQueue(nextQueue);
+        await saveQueueToStorage(nextQueue);
+      } catch (error: any) {
+        console.warn('Sync op failed', op, note.id, error.message);
+      }
+    }
+  }, [queue, saveQueueToStorage, userId]);
+
+  // Fetch latest notes from Supabase - this is called when the user is online
+  const fetchNotesFromSupabase = useCallback(async () => {
+    if (!userId) return;
+    const { data, error } = await supabase.from('notes').select('*').eq('user_id', userId);
     if (error) {
       console.warn('Supabase fetch error:', error.message);
-    } else {
+    } else if (data) {
       setNotes(data);
       await saveNotesToStorage(data);
     }
-  };
+  }, [userId, saveNotesToStorage]);
 
-  const syncNotes = async () => {
+  // SyncNotes function - checks to see if the user is online and then drains the queue
+  // or fetches notes from local storage if the user is offline
+   const syncNotes = useCallback(async () => {
     const state = await NetInfo.fetch();
-    setIsOnline(state.isConnected ?? true);
+    const online = state.isConnected ?? false;
+    setIsOnline(online);
 
-    if (state.isConnected) {
-      await fetchNotesFromSupabase();
+    if (online) {
+      await drainQueue();
+      if (userId) await fetchNotesFromSupabase();
+      const now = new Date().toISOString();
+      setLastSync(now);
     } else {
       await loadNotesFromStorage();
     }
-  };
-
-  const addNote = async (title: string, desc: string) => {
-    const newNote: Note = {
-      id: Date.now().toString(),
-      title,
-      desc,
-    };
-
-    const updatedNotes = [...notes, newNote];
-    setNotes(updatedNotes);
-    await saveNotesToStorage(updatedNotes);
-
-    if (isOnline && userId) {
-      const { error } = await supabase.from('notes').insert({
-        id: newNote.id,
-        title,
-        desc,
-        user_id: userId,
-      });
-
-      if (error) {
-        Alert.alert('Sync failed', error.message);
-      }
-    }
-  };
-
-  const updateNote = async (id: string, newDesc: string) => {
-    const updatedNotes = notes.map((note) =>
-      note.id === id ? { ...note, desc: newDesc } : note
-    );
-    setNotes(updatedNotes);
-    await saveNotesToStorage(updatedNotes);
-
-    if (isOnline && userId) {
-      const { error } = await supabase
-        .from('notes')
-        .update({ desc: newDesc })
-        .eq('id', id)
-        .eq('user_id', userId);
-
-      if (error) {
-        Alert.alert('Update failed', error.message);
-      }
-    }
-  };
-
+  }, [userId, drainQueue, fetchNotesFromSupabase]);
+  
+  // Trigger sync on user change
   useEffect(() => {
     syncNotes();
-  }, [userId]);
+  }, [userId, syncNotes]);
 
-  return {
-    notes,
-    addNote,
-    updateNote,
-    refreshNotes: syncNotes,
-  };
+  // Event listener for network changes, syncs notes when back online
+  useEffect(() => {
+    const onlineStatus = NetInfo.addEventListener(state => {
+      if (state.isConnected) syncNotes();
+    });
+    return () => onlineStatus();
+  }, [syncNotes]);
+
+
+  // Add, update, and delete note functions, which also handle local state and queueing operations
+  const addNote = useCallback(
+    async (title: string, desc: string) => {
+      const newNote: Note = { id: Date.now().toString(), title, desc };
+      const updated = [...notes, newNote];
+      setNotes(updated);
+      await saveNotesToStorage(updated);
+      enqueue({ op: 'insert', note: newNote });
+    },
+    [notes, enqueue, saveNotesToStorage]
+  );
+
+  const updateNote = useCallback(
+    async (id: string, newDesc: string) => {
+      const updated = notes.map(n => n.id === id ? { ...n, desc: newDesc } : n);
+      setNotes(updated);
+      await saveNotesToStorage(updated);
+      const note = updated.find(n => n.id === id)!;
+      enqueue({ op: 'update', note });
+    },
+    [notes, enqueue, saveNotesToStorage]
+  );
+
+  const deleteNote = useCallback(
+    async (id: string) => {
+      const updated = notes.filter(n => n.id !== id);
+      setNotes(updated);
+      await saveNotesToStorage(updated);
+      enqueue({ op: 'delete', note: { id } as Note });
+    },
+    [notes, enqueue, saveNotesToStorage]
+  );
+
+  return { notes, isOnline, queue, addNote, updateNote, deleteNote, syncNotes, lastSync };
 }

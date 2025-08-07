@@ -40,7 +40,7 @@ useEffect(() => {
   fetchUser();
 }, []);
 
-const { notes, addNote, updateNote } = useNotes(userId);
+const { notes, addNote, updateNote, lastSync } = useNotes(userId);
 
 
   const handleAddNote = () => {
@@ -78,7 +78,12 @@ const { notes, addNote, updateNote } = useNotes(userId);
       <TouchableOpacity onPress={() => setModalVisible(true)}>
         <Ionicons name="add-circle-outline" size={28} color="black" />
       </TouchableOpacity>
-
+      
+      {lastSync && (
+      <Text style={styles.syncText}>
+        Last synced at {new Date(lastSync).toLocaleTimeString()}
+      </Text>
+)}
       <FlatList
         data={notes}
         keyExtractor={(item) => item.id}
@@ -176,4 +181,12 @@ const styles = StyleSheet.create({
   },
   addButtonText: { color: '#fff', fontWeight: 'bold' },
   headerTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
+
+  syncText: {
+  textAlign: 'right',
+  marginHorizontal: 16,
+  marginBottom: 8,
+  fontSize: 12,
+  color: '#666',
+  },
 });
