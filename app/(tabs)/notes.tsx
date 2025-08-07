@@ -88,13 +88,14 @@ export default function NotesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: '#c2b9d6' }]}>
-      <TouchableOpacity onPress={() => setModalVisible(true)}>
-        <Ionicons name="add-circle-outline" size={28} color="black" />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={forceSync} style={{ padding: 10, backgroundColor: '#6b5f84', borderRadius: 6 }}>
-        <Text style={{ color: 'white', textAlign: 'center' }}>🔁 Force Sync</Text>
-      </TouchableOpacity>
-
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 16, paddingRight: 16 }}>
+        <TouchableOpacity onPress={() => setModalVisible(true)}>
+          <Ionicons name="add-circle-outline" size={28} color="black" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={forceSync} style={{ padding: 10, alignSelf: 'flex-end', backgroundColor: '#6b5f84', borderRadius: 6, maxWidth: 300 }}>
+          <Text style={{ color: 'white', textAlign: 'center' }}>🔁 Force Sync</Text>
+        </TouchableOpacity>
+      </View>
       {lastSync && (
         <Text style={styles.syncText}>
           Last synced at {new Date(lastSync).toLocaleTimeString()}
@@ -146,9 +147,21 @@ export default function NotesScreen() {
                 onChangeText={setEditedDesc}
               />
             </ScrollView>
-            <TouchableOpacity style={styles.addButton} onPress={saveEditedNote}>
-              <Text style={styles.addButtonText}>Save</Text>
-            </TouchableOpacity>
+
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity style={styles.addButton} onPress={saveEditedNote}>
+                <Text style={styles.addButtonText}>Save</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.deleteButton]}
+                onPress={()=> {
+                deleteNote(activeNote.id);
+                setEditModalVisible(false);
+              }}>
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+            
             <TouchableOpacity onPress={() => setEditModalVisible(false)}>
               <Text style={{ color: 'red', marginTop: 10 }}>Close</Text>
             </TouchableOpacity>
@@ -160,6 +173,21 @@ export default function NotesScreen() {
 }
 
 const styles = StyleSheet.create({
+  modalButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  deleteButton: {
+    backgroundColor: '#6b5f84',  // purple accent fits the theme
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
   container: { flex: 1 },
   noteBox: {
     margin: 12,
@@ -174,12 +202,13 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: '(0,0,0,0.3)',
   },
   modalContent: {
     margin: 20,
-    backgroundColor: 'white',
+    backgroundColor: '#ffffffff',
     padding: 20,
+    borderWidth: 1,
     borderRadius: 10,
   },
   input: {
@@ -189,6 +218,7 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 6,
     backgroundColor: '#f9f9f9',
+    textAlignVertical: 'top',
   },
   addButton: {
     backgroundColor: '#6b5f84',

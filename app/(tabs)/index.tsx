@@ -9,7 +9,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <Ionicons name="book-outline" size={64} color="#0A001A" style={styles.icon} />
       <Text style={styles.title}>Welcome to Note Nexus!</Text>
-      <Text style={styles.subtitle}>Your personal note-taking app.</Text>
+      <Text style={styles.subtitle}>Your collaborative note-taking tool</Text>
     </SafeAreaView>
   );
 }

@@ -16,6 +16,8 @@ export type QueueOp = {
   note: Note;
 };
 
+// Local storage keys
+
 const STORAGE_KEY = '@offline_notes';
 const QUEUE_KEY = '@offline_notes_queue';
 
@@ -68,11 +70,8 @@ export function useNotes(userId: string | null) {
   );
 
   const drainQueue = useCallback(async () => {
-    setQueue(prevQueue => {
-      const processQueue = async () => {
-        let nextQueue = [...prevQueue];
-
-        for (const { op, note } of prevQueue) {
+    let nextQueue = [...queue];
+        for (const { op, note } of queue) {
           try {
             if (op === 'insert') {
               const { error } = await supabase.from('notes').insert({
@@ -109,16 +108,12 @@ export function useNotes(userId: string | null) {
             console.warn('Sync op failed', op, note.id, error.message);
           }
         }
-
-        setQueue(nextQueue);
-        await saveQueueToStorage(nextQueue);
-      };
-
-      processQueue();
-      return prevQueue;
-    });
-  }, [saveQueueToStorage, userId]);
-
+    if (nextQueue.length !== queue.length) {
+      setQueue(nextQueue);
+      await saveQueueToStorage(nextQueue);
+    }
+  }, [queue, saveQueueToStorage, userId]);
+  
   const fetchNotesFromSupabase = useCallback(async () => {
     if (!userId) return;
     const { data, error } = await supabase.from('notes').select('*').eq('user_id', userId);
