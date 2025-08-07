@@ -1,15 +1,31 @@
-// app/(tabs)/index.tsx
-import React from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { supabase } from '../_lib/supabaseClient';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        router.replace('/signin');
+      } else {
+        setLoading(false);
+      }
+    });
+  }, []);
+
+  if (loading) return null;
+
   return (
     <SafeAreaView style={styles.container}>
       <Ionicons name="book-outline" size={64} color="#0A001A" style={styles.icon} />
       <Text style={styles.title}>Welcome to Note Nexus!</Text>
-      <Text style={styles.subtitle}>Your collaborative note-taking tool</Text>
+      <Text style={styles.subtitle}>Your personal note-taking tool</Text>
     </SafeAreaView>
   );
 }
@@ -17,7 +33,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#B2ABC5',  
+    backgroundColor: '#B2ABC5',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -28,13 +44,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#0A001A',           
+    color: '#0A001A',
     textAlign: 'center',
   },
   subtitle: {
     marginTop: 12,
     fontSize: 16,
-    color: '#333',               
+    color: '#333',
     textAlign: 'center',
   },
 });

@@ -9,6 +9,8 @@ export default function SignUp() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
 
+console.log('Signing up with:', { email, password, fullName });
+
 const handleSignUp = async () => {
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -35,18 +37,21 @@ const handleSignUp = async () => {
         style={styles.input}
         placeholder="Full Name"
         onChangeText={setFullName}
+        placeholderTextColor="#888"
       />
       <TextInput
         style={styles.input}
         placeholder="Email"
         onChangeText={setEmail}
         autoCapitalize="none"
+        placeholderTextColor="#888"
       />
       <TextInput
         style={styles.input}
         placeholder="Password"
         secureTextEntry
         onChangeText={setPassword}
+        placeholderTextColor="#888"
       />
         <TouchableOpacity style={styles.button} onPress={handleSignUp}>
           <Text style={styles.buttonText}>Sign Up</Text>

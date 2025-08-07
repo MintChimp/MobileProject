@@ -17,7 +17,7 @@ export default function SignIn() {
     if (error) {
       Alert.alert('Sign-In Error', error.message);
     } else {
-      router.replace('/(tabs)/notes'); // redirect to notes tab
+      router.replace('/'); // redirect to notes tab
     }
   };
 
@@ -30,12 +30,14 @@ export default function SignIn() {
           placeholder="Email"
           onChangeText={setEmail}
           autoCapitalize="none"
+          placeholderTextColor="#888"
         />
         <TextInput
           style={styles.input}
           placeholder="Password"
           secureTextEntry
           onChangeText={setPassword}
+          placeholderTextColor="#888"
         />
         <TouchableOpacity style={styles.button} onPress={handleSignIn}>
           <Text style={styles.buttonText}>Sign In</Text>
