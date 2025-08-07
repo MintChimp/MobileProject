@@ -14,7 +14,7 @@ const handleSignUp = async () => {
     email,
     password,
     options: {
-      emailRedirectTo: 'mynotesapp://verify',
+      emailRedirectTo: `mynotesapp://verify?email=${encodeURIComponent(email)}`,
       data: { full_name: fullName },
     },
   });
