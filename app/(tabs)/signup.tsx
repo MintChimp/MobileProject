@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { supabase } from '../_lib/supabaseClient';
 import { useRouter } from 'expo-router';
 
@@ -29,6 +29,7 @@ const handleSignUp = async () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.inner}>
       <Text style={styles.title}>Sign Up</Text>
       <TextInput
         style={styles.input}
@@ -47,23 +48,61 @@ const handleSignUp = async () => {
         secureTextEntry
         onChangeText={setPassword}
       />
-      <Button title="Sign Up" onPress={handleSignUp} />
-      <Text style={styles.link} onPress={() => router.push('/signin')}>
-        Already have an account? Sign in
-      </Text>
+        <TouchableOpacity style={styles.button} onPress={handleSignUp}>
+          <Text style={styles.buttonText}>Sign Up</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.push('/signin')}>
+          <Text style={styles.link}>Already have an account? Sign in</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, flex: 1, justifyContent: 'center' },
-  title: { fontSize: 24, marginBottom: 20, fontWeight: 'bold' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    marginBottom: 12,
-    padding: 10,
-    borderRadius: 6,
+  container: {
+    flex: 1,
+    backgroundColor: '#B2ABC5',
   },
-  link: { color: 'blue', marginTop: 20 },
+  inner: {
+    flex: 1,
+    padding: 24,
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#0A001A',
+    textAlign: 'center',
+    marginBottom: 40,
+  },
+  input: {
+    backgroundColor: '#fff',
+    color: '#0A001A',
+    borderWidth: 1,
+    borderColor: '#0A001A',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  button: {
+    backgroundColor: '#0A001A',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  link: {
+    color: '#0A001A',          
+    textAlign: 'center',
+    marginTop: 20,
+    textDecorationLine: 'underline',
+  },
 });
